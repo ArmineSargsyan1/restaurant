@@ -1,117 +1,150 @@
-import Restaurant from '../models/Restaurant.js';
+import {Restaurant} from '../models/index.js';
+import Product from "../models/Products.js";
 
-export const createRestaurant = async (req, res, next) => {
-  console.log(req)
+
+export const createRestaurant = async (req, res) => {
   try {
     const restaurant = await Restaurant.createRestaurant(req.body);
-    console.log(restaurant, 333)
-    res.status(201).json({
-      success: true,
-      message: "Restaurant created successfully",
-      data: restaurant
+
+    const result = await Restaurant.findByPk(restaurant.id, {
+      attributes: {exclude: ['location']}
     });
-  } catch (err) {
-    console.log(err)
-    next(err);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Restaurant created successfully',
+      data: result
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-export const getAllRestaurants = async (req, res, next) => {
-  try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
 
-    const result = await Restaurant.getAll({
+export const getAllRestaurants = async (req, res) => {
+  try {
+    const {page = 1, limit = 10, cuisineType, priceRange} = req.query;
+
+    const where = {};
+    if (cuisineType) where.cuisineType = cuisineType;
+    if (priceRange) where.priceRange = priceRange;
+
+    const offset = (page - 1) * limit;
+
+    const {count, rows} = await Restaurant.findAndCountAll({
+      where,
+      limit: Number(limit),
+      offset: Number(offset),
+      attributes: {exclude: ['location']},
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      total: count,
+      page: Number(page),
+      totalPages: Math.ceil(count / limit),
+      data: rows
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+export const getRestaurantById = async (req, res) => {
+  try {
+    const {id} = req.params;
+
+    const restaurant = await Restaurant.findByPk(id, {
+      include: {model: Product, as: 'products'},
+      attributes: {exclude: ['location']},
+    });
+
+    if (!restaurant)
+      return res
+        .status(404)
+        .json({status: 'error', message: 'Restaurant not found'});
+
+    return res.json({status: 'ok', data: restaurant});
+  } catch (error) {
+    return res.status(500).json({status: 'error', message: error.message});
+  }
+};
+
+
+export const updateRestaurant = async (req, res) => {
+  try {
+    const {id} = req.params;
+
+    const restaurant = await Restaurant.findByPk(id);
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found'
+      });
+    }
+
+    Restaurant.setLocationFields(req.body);
+
+    await restaurant.update(req.body);
+
+    const result = await Restaurant.findByPk(id, {
+      attributes: {exclude: ['location']}
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Restaurant updated successfully',
+      data: result
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const deleteRestaurant = async (req, res) => {
+  try {
+    const {id} = req.params;
+
+    const deleted = await Restaurant.deleteById(id);
+    if (!deleted)
+      return res
+        .status(404)
+        .json({status: 'error', message: 'Restaurant not found'});
+
+    return res.json({status: 'ok', message: 'Restaurant deleted'});
+  } catch (error) {
+    return res.status(500).json({status: 'error', message: error.message});
+  }
+};
+
+export const findNearbyRestaurants = async (req, res) => {
+  try {
+    const {latitude, longitude, radius, page, limit, cuisineType, minRating} = req.query;
+
+    const nearby = await Restaurant.findNearby({
+      latitude,
+      longitude,
+      radius,
       page,
       limit,
-      cuisine_type: req.query.cuisine_type,
-      price_range: req.query.price_range
+      cuisineType,
+      minRating
     });
 
-    res.json({
-      success: true,
-      count: result.rows.length,
-      total: result.count,
-      page,
-      totalPages: Math.ceil(result.count / limit),
-      data: result.rows
-    });
-  } catch (err) {
-    next(err);
+    return res.json({status: 'ok', data: nearby});
+  } catch (error) {
+    return res.status(400).json({status: 'error', message: error.message});
   }
 };
-
-export const findNearbyRestaurants = async (req, res, next) => {
-  const {latitude, longitude} = req.query
-  try {
-    const restaurants = await Restaurant.findNearby(req.query);
-    // console.log(restaurants,3666)
-    res.json({
-      success: true,
-      count: restaurants.length,
-      search_location: {
-        latitude,
-        longitude
-      },
-      radius: Number(req.query.radius),
-      unit: req.body.unit,
-      data: restaurants
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const getRestaurantById = async (req, res, next) => {
-  try {
-    const restaurant = await Restaurant.getById(req.params.id);
-
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        error: 'Restaurant not found'
-      });
-    }
-
-    res.json({success: true, data: restaurant});
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const updateRestaurant = async (req, res, next) => {
-  try {
-    const restaurant = await Restaurant.updateById(
-      req.params.id,
-      req.body
-    );
-
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        error: 'Restaurant not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Restaurant updated successfully",
-      data: restaurant
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const deleteRestaurant = async (req, res, next) => {
-  try {
-    const success = await Restaurant.deleteById(req.params.id);
-    if (!success)
-      return res.status(404).json({success: false, error: 'Restaurant not found'});
-
-    res.json({success: true, message: 'Restaurant deleted successfully'});
-  } catch (err) {
-    next(err);
-  }
-};
-
