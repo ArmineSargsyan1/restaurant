@@ -1,8 +1,8 @@
-import {Model, DataTypes} from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import md5 from 'md5';
-import sequelize from '../clients/db.sequelize.mysql.js'
+import sequelize from '../clients/db.sequelize.mysql.js';
 
-const {USER_SECRET} = process.env;
+const { USER_SECRET } = process.env;
 
 class User extends Model {
   async comparePassword(plainPassword) {
@@ -42,6 +42,12 @@ User.init(
         len: [6, 255],
       },
     },
+
+    profilePicture: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      defaultValue: null,
+    },
   },
   {
     sequelize,
@@ -54,6 +60,7 @@ User.init(
       async beforeCreate(user) {
         user.password = md5(md5(user.password) + USER_SECRET);
       },
+
     },
   }
 );

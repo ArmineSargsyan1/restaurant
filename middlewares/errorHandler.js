@@ -1,44 +1,56 @@
 export default function errorHandler(err, req, res, next) {
-  // Sequelize validation errors
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      success: false,
+      error: 'File too large',
+      message:
+        'Max allowed size: 2 MB for profiles, 5 MB for restaurants and products'
+    });
+  }
+
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({
+      success: false,
+      error: 'Unexpected file field',
+      message: 'Check the field name used in your request'
+    });
+  }
+
+  if (err.message === 'Only image files are allowed') {
+    return res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+
   if (err.name === 'SequelizeValidationError') {
     const details = err.errors.map(e => ({
       field: e.path,
       message: e.message,
     }));
 
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       error: 'Validation Error',
       details,
     });
-    return next(err); // pass to next middleware if needed
   }
 
-  // Sequelize unique constraint errors
   if (err.name === 'SequelizeUniqueConstraintError') {
-    res.status(409).json({
+    return res.status(409).json({
       success: false,
       error: 'Duplicate entry',
     });
-    return next(err);
   }
 
-  // Sequelize database errors
   if (err.name === 'SequelizeDatabaseError') {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Database error',
       message: err.message,
     });
-    return next(err);
   }
 
-  // All other errors
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    error: 'Internal server error',
-    message: err.message,
-  });
   return next(err);
 }

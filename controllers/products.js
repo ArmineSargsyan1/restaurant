@@ -1,18 +1,30 @@
 import {Restaurant} from '../models/index.js';
 import Product from "../models/Products.js";
+import FileHelper from '../services/Utils.js';
+
 
 export const createProduct = async (req, res) => {
+  const images = req.files
+    ? req.files.map(file => FileHelper.getFilePath(file))
+    : [];
+
   try {
     const restaurantId = req.params.restaurantId;
 
     const restaurant = await Restaurant.findByPk(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({success: false, error: 'Restaurant not found'});
+      images.forEach(img => FileHelper.deleteFile(img));
+
+      return res.status(404).json({
+        success: false,
+        error: 'Restaurant not found'
+      });
     }
 
     const newProduct = await Product.create({
       ...req.body,
-      restaurantId: Number(restaurantId)
+      restaurantId: Number(restaurantId),
+      images
     });
 
     return res.status(201).json({
@@ -20,8 +32,14 @@ export const createProduct = async (req, res) => {
       message: 'Product created successfully',
       data: newProduct
     });
+
   } catch (error) {
-    return res.status(400).json({status: 'error', message: error.message});
+    images.forEach(img => FileHelper.deleteFile(img));
+
+    return res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };
 
@@ -125,39 +143,65 @@ export const getProductById = async (req, res) => {
   }
 };
 
+
 export const updateProduct = async (req, res) => {
+  const newImages = req.files
+    ? req.files.map(file => FileHelper.getFilePath(file))
+    : [];
+
   try {
     const {restaurantId, id} = req.params;
 
     const rId = Number(restaurantId);
     const pId = Number(id);
 
-    // const restaurant = await Restaurant.findByPk(rId);
-    // if (!restaurant) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: 'Restaurant not found'
-    //   });
-    // }
+    const restaurant = await Restaurant.findByPk(rId);
+    if (!restaurant) {
+      newImages.forEach(img => FileHelper.deleteFile(img));
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found'
+      });
+    }
 
     const product = await Product.findOne({
       where: {id: pId, restaurantId: rId}
     });
+
     if (!product) {
+      newImages.forEach(img => FileHelper.deleteFile(img));
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
     }
 
-    await product.update(req.body);
+    const oldImages = product.images || [];
+
+    let images = oldImages;
+
+    if (newImages.length > 0) {
+      images = newImages;
+    }
+
+    await product.update({
+      ...req.body,
+      images
+    });
+
+    if (newImages.length > 0) {
+      oldImages.forEach(oldImg => FileHelper.deleteFile(oldImg));
+    }
 
     return res.status(200).json({
       success: true,
       message: 'Product updated successfully',
       data: product
     });
+
   } catch (err) {
+    newImages.forEach(img => FileHelper.deleteFile(img));
+
     return res.status(500).json({
       success: false,
       message: err.message
@@ -173,13 +217,13 @@ export const deleteProduct = async (req, res) => {
     const rId = Number(restaurantId);
     const pId = Number(id);
 
-    // const restaurant = await Restaurant.findByPk(rId);
-    // if (!restaurant) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: 'Restaurant not found'
-    //   });
-    // }
+    const restaurant = await Restaurant.findByPk(rId);
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found'
+      });
+    }
 
     const product = await Product.findOne({
       where: {id: pId, restaurantId: rId}
@@ -192,12 +236,17 @@ export const deleteProduct = async (req, res) => {
       });
     }
 
+    const images = product.images || [];
+
     await product.destroy();
+
+    images.forEach(img => FileHelper.deleteFile(img));
 
     return res.status(200).json({
       success: true,
       message: 'Product deleted successfully'
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -205,4 +254,3 @@ export const deleteProduct = async (req, res) => {
     });
   }
 };
-

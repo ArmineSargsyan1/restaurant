@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import FileHelper from "../services/Utils.js";
 
 export default (targets) => {
   return (req, res, next) => {
@@ -31,6 +32,8 @@ export default (targets) => {
       return
     }
 
+    if (req.file) FileHelper.deleteFile(req.file.path);
+
     res.status(422).json({
       status: 'error',
       message: 'Validation error',
@@ -38,3 +41,7 @@ export default (targets) => {
     });
   };
 };
+
+
+
+

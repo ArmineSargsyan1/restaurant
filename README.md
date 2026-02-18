@@ -1,57 +1,22 @@
-# git-node-2
+# Restaurant Finder API (Multer Version)
 
-# npx express-generator --view=ejs git-node-2
+## Overview
+This project extends the Restaurant Finder API by integrating image uploads using Multer.
 
-### create : git-node-2/
-### create : git-node-2/public/
-### create : git-node-2/public/javascripts/
-### create : git-node-2/public/images/
-### create : git-node-2/public/stylesheets/
-### create : git-node-2/public/stylesheets/style.css
-### create : git-node-2/routes/
-### create : git-node-2/routes/index.js
-### create : git-node-2/routes/users.js
-### create : git-node-2/views/
-### create : git-node-2/views/error.ejs
-### create : git-node-2/views/index.ejs
-### create : git-node-2/app.js
-### create : git-node-2/package.json
-### create : git-node-2/bin/
-### create : git-node-2/bin/www
+Supported uploads:
+- User → ONE profile picture (2MB max)
+- Restaurant → ONE cover image (5MB max)
+- Product → UP TO 5 images (5MB each)
 
-### change directory:
-### $ cd git-node-2
+All files:
+- Are validated by MIME type
+- Stored on disk in organized folders
+- Saved in the database as relative paths
+- Deleted automatically on update or delete
 
-### install dependencies:
-### $ npm install
+---
 
-### run the app:
-### DEBUG=git-node-2:* npm start
+## Installation
 
-
-
-###{
-###"seats": [
-
-###{ "seat_number": "A1", "row_number": "A" },
-
-###{ "seat_number": "A2", "row_number": "A" }
-
-###]
-
-###}
-###{        "title": "title is required",
-
-###"description": "description is required",
-
-###"duration": "140"
-
-###}
-
-###{
-
-###"date": "2026-01-26",
-
-###"times": ["13:00"]
-
-###}
+```bash
+nyarn add

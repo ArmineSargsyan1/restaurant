@@ -15,17 +15,6 @@ class Restaurant extends Model {
     }
   }
 
-  static createRestaurant(data) {
-    return this.create(data);
-  }
-
-
-  static async deleteById(id) {
-    const restaurant = await this.findByPk(id);
-    if (!restaurant) return null;
-    await restaurant.destroy();
-    return true;
-  }
 
   static async findNearby({latitude, longitude, radius, page = 1, limit = 10, cuisineType, minRating, unit = 'km'}) {
 
@@ -96,7 +85,14 @@ Restaurant.init(
       defaultValue: '$$'
     },
     phone: {type: DataTypes.STRING(20)},
-    isOpen: {type: DataTypes.BOOLEAN, defaultValue: true}
+    isOpen: {type: DataTypes.BOOLEAN, defaultValue: true},
+
+    coverImage: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      defaultValue: null
+    },
+
   },
   {
     sequelize,

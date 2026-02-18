@@ -16,5 +16,10 @@ export default {
     }),
   },
 
+  uploadProfilePicture: {
+    body: Joi.object({
+     profilePicture: Joi.string().required()
+    }),
+  },
 
 }

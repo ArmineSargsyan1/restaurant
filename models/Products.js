@@ -11,7 +11,14 @@ Product.init(
     description: {type: DataTypes.TEXT},
     price: {type: DataTypes.DECIMAL(10, 2), allowNull: false, validate: {min: 0}},
     category: {type: DataTypes.STRING(100)},
-    isAvailable: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true}
+    isAvailable: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true},
+
+    images: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null
+    },
+
   },
   {
     sequelize,

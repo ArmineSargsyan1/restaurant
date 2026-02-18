@@ -1,28 +1,34 @@
 import {Restaurant} from '../models/index.js';
 import Product from "../models/Products.js";
-
+import FileHelper from "../services/Utils.js";
 
 export const createRestaurant = async (req, res) => {
+  const coverImage = FileHelper.getFilePath(req.file);
+
   try {
-    const restaurant = await Restaurant.createRestaurant(req.body);
+    const restaurant = await Restaurant.create({
+      ...req.body,
+      coverImage,
+    });
 
     const result = await Restaurant.findByPk(restaurant.id, {
-      attributes: {exclude: ['location']}
+      attributes: { exclude: ['location'] },
     });
 
     return res.status(201).json({
       success: true,
       message: 'Restaurant created successfully',
-      data: result
+      data: result,
     });
   } catch (error) {
+    FileHelper.deleteFile(coverImage);
+
     return res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
-
 
 export const getAllRestaurants = async (req, res) => {
   try {
@@ -82,14 +88,27 @@ export const getRestaurantById = async (req, res) => {
 
 export const updateRestaurant = async (req, res) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
 
     const restaurant = await Restaurant.findByPk(id);
     if (!restaurant) {
+
+      if (req.file) FileHelper.deleteFile(req.file.path);
+
       return res.status(404).json({
         success: false,
         message: 'Restaurant not found'
       });
+    }
+
+    if (req.file) {
+      const newCover = FileHelper.getFilePath(req.file);
+
+      if (restaurant.coverImage) {
+        FileHelper.deleteFile(restaurant.coverImage);
+      }
+
+      req.body.coverImage = newCover;
     }
 
     Restaurant.setLocationFields(req.body);
@@ -97,7 +116,7 @@ export const updateRestaurant = async (req, res) => {
     await restaurant.update(req.body);
 
     const result = await Restaurant.findByPk(id, {
-      attributes: {exclude: ['location']}
+      attributes: { exclude: ['location'] }
     });
 
     return res.status(200).json({
@@ -106,6 +125,8 @@ export const updateRestaurant = async (req, res) => {
       data: result
     });
   } catch (error) {
+    if (req.file) FileHelper.deleteFile(req.file.path);
+
     return res.status(400).json({
       success: false,
       message: error.message
@@ -115,19 +136,35 @@ export const updateRestaurant = async (req, res) => {
 
 export const deleteRestaurant = async (req, res) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
 
-    const deleted = await Restaurant.deleteById(id);
-    if (!deleted)
-      return res
-        .status(404)
-        .json({status: 'error', message: 'Restaurant not found'});
+    const restaurant = await Restaurant.findByPk(id);
+    if (!restaurant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Restaurant not found'
+      });
+    }
 
-    return res.json({status: 'ok', message: 'Restaurant deleted'});
+    if (restaurant.coverImage) {
+      FileHelper.deleteFile(restaurant.coverImage);
+    }
+
+    await restaurant.destroy();
+
+    return res.json({
+      status: 'ok',
+      message: 'Restaurant deleted'
+    });
+
   } catch (error) {
-    return res.status(500).json({status: 'error', message: error.message});
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };
+
 
 export const findNearbyRestaurants = async (req, res) => {
   try {

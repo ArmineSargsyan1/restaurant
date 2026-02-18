@@ -9,7 +9,6 @@ import './migrate.js';
 
 const app = express();
 
-// view engine setup
 app.set('views', path.resolve('views'));
 app.set('view engine', 'ejs');
 
@@ -22,7 +21,7 @@ app.use(router);
 
 app.use(errorHandler);
 
-// catch 404 and forward to error handler
+
 app.use((req, res, next) => {
   next(createError(404));
 });
